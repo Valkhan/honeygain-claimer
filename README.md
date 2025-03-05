@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 ## Chrome driver
 
-You can download the Chrome driver from [here](https://googlechromelabs.github.io/chrome-for-testing/) and place the .exe file it in the same directory as the script of the virtual environment, eg: `venv-honeygain/Scripts/chromedriver.exe`
+You can download the Chrome driver from [here](https://googlechromelabs.github.io/chrome-for-testing/) and place the .exe at the root of the project, eg: `./chromedriver.exe`
 
 You may also check on your Chrome version by going to `chrome://settings/help` and download the corresponding version of the Chrome driver in the given link:
 
@@ -43,9 +43,11 @@ https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.142/win64/ch
 
 # Usage
 
+Copy the `.env.example` file to `.env` and fill in the required fields.
+
 ```bash
 # After initializing the virtual environment, run the script
-python claim.py [email] [password]
+python claim.py
 ```
 
 # Disclaimer

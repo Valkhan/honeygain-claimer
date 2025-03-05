@@ -5,22 +5,31 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from dotenv import load_dotenv
 import time
 import os
-import sys
 
-# Receber e-mail e senha dos argumentos
-if len(sys.argv) < 3:
-    print("Informe o e-mail e senha do Honeygain")
-    exit()
 
-email = sys.argv[1]
-passwd = sys.argv[2]
+log_dir = os.path.join(os.getcwd(), "logs")
+
+load_dotenv()
+email = os.getenv("HONEYGAIN_EMAIL")
+passwd = os.getenv("HONEYGAIN_PASSWORD")
+
+# Criar log com dia Y-m-d.log
+log_file = os.path.join(log_dir, f"{time.strftime('%Y-%m-%d')}.log")
+
+# Adiciona no log data e hora
+def log(msg):
+    with open(log_file, "a") as f:
+        f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+    print(msg)
+
+log("Processando email: " + email)
 
 # Configurar o WebDriver
 chrome_options = Options()
-chromedriver_path = os.path.join(
-    os.getcwd(), "venv-honeygain", "Scripts", "chromedriver.exe")
+chromedriver_path = os.path.join(os.getcwd(), "chromedriver.exe")
 
 chrome_options.add_argument("--headless")  
 chrome_options.add_argument("--disable-gpu")
@@ -32,13 +41,13 @@ driver = webdriver.Chrome(service=service, options=chrome_options)
 wait = WebDriverWait(driver, 15)  # Aumentado para garantir carregamento total
 
 try:
-    print("Acessando o site do Honeygain...")
+    log("Acessando o site do Honeygain...")
     driver.get("https://dashboard.honeygain.com/")
     time.sleep(2)
 
     # Verifica se estamos na tela de login
     if "login" in driver.current_url:
-        print("Página de login detectada. Aguardando campos de entrada...")
+        log("Página de login detectada. Aguardando campos de entrada...")
 
         # Esperar que o campo de e-mail apareça antes de tentar interagir
         email_input = wait.until(EC.presence_of_element_located(
@@ -49,65 +58,61 @@ try:
         pwd_input.send_keys(passwd)
         pwd_input.send_keys(Keys.RETURN)
 
-        print("Credenciais inseridas. Aguardando redirecionamento...")
+        log("Credenciais inseridas. Aguardando redirecionamento...")
 
         # **Aguardar que a URL MUDE para garantir que o login foi feito**
         wait.until(lambda d: "login" not in d.current_url)
 
         if "login" in driver.current_url:
-            print("Usuário ou senha inválidos!")
+            log("Usuário ou senha inválidos!")
             driver.quit()
             exit()
 
-    print("Login realizado com sucesso!")
+    log("Login realizado com sucesso!")
 
     # **Esperar a página de dashboard carregar completamente**
     time.sleep(5)
-    print("Dashboard carregado!")
+    log("Dashboard carregado!")
 
     # **Aguardar até que o botão de recompensa apareça**
     try:
-        print("Procurando botão de recompensa...")
+        log("Procurando botão de recompensa...")
         claim_button = driver.find_element(By.CSS_SELECTOR, "button.jdbHQP")
         claim_button.click()
-        print("Botão de recompensa encontrado e clicado!")
+        log("Botão de recompensa encontrado e clicado!")
     except:
-        print("O botão de recompensa não foi encontrado ou já foi coletado.")
+        log("O botão de recompensa não foi encontrado ou já foi coletado.")
         driver.quit()
         exit()
 
     # **Aguardar e confirmar a recompensa no modal**
     try:
-        print("Aguardando botão de recompensa aparecer...")
+        log("Aguardando botão de recompensa aparecer...")
         time.sleep(5)  # Ajuste conforme necessário
 
         # Localiza o botão corretamente
         claim_button = wait.until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, ".Modal button"))
         )
-        print("Botão de recompensa encontrado!")
+        log("Botão de recompensa encontrado!")
 
         # Verifica se o botão está realmente visível antes de tentar clicar
         if claim_button.is_displayed():
             try:
                 claim_button.click()
-                print("Botão de recompensa clicado com sucesso!")
+                log("Botão de recompensa clicado com sucesso!")
             except:
-                print("Clique normal falhou, tentando via JavaScript...")
+                log("Clique normal falhou, tentando via JavaScript...")
                 driver.execute_script("arguments[0].click();", claim_button)
-                print("Botão clicado via JavaScript!")
+                log("Botão clicado via JavaScript!")
         else:
-            print("O botão não está visível na tela!")
+            log("O botão não está visível na tela!")
 
     except Exception as e:
-        print(f"Erro ao clicar no botão: {e}")
+        log(f"Erro ao clicar no botão: {e}")
 
-
-    except Exception as e:
-        print(f"Erro ao clicar no botão:")
-        print(e)
 
     time.sleep(3) # Aguarda a solicitação ser processada
 finally:
-    print("Fechando o navegador...")
+    log("Fechando o navegador...")
     driver.quit()
